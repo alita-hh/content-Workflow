@@ -1,6 +1,8 @@
 export const radarHotspots = [
   {
     id: "hotspot-1",
+    /** 相对「当前时间」的小时偏移，用于时间筛选（越小越新） */
+    hoursAgo: 0.17,
     title: "智谱 API 全线降价，大模型价格战打响",
     tags: ["#AI算力", "#科技板块"],
     source: "财联社电报 - 10分钟前",
@@ -10,6 +12,7 @@ export const radarHotspots = [
   },
   {
     id: "hotspot-2",
+    hoursAgo: 0.3,
     title: "北向资金午后回流，新能源链条成交额显著放大",
     tags: ["#北向资金", "#新能源"],
     source: "证券时报 - 18分钟前",
@@ -19,12 +22,33 @@ export const radarHotspots = [
   },
   {
     id: "hotspot-3",
+    hoursAgo: 0.53,
     title: "国债收益率震荡下行，红利低波资产关注度持续升温",
     tags: ["#红利低波", "#固收+策略"],
     source: "中证快讯 - 32分钟前",
     sourceUrl: "https://www.cs.com.cn/",
     summary:
       "长端利率回落强化防御型资产配置逻辑，红利低波策略关注度提升，机构更偏好现金流稳定与高分红标的。"
+  },
+  {
+    id: "hotspot-4",
+    hoursAgo: 30,
+    title: "美联储官员释放鹰派信号，全球风险资产波动率抬升",
+    tags: ["#美联储", "#全球宏观"],
+    source: "华尔街见闻 - 昨天 18:20",
+    sourceUrl: "https://wallstreetcn.com/",
+    summary:
+      "隔夜海外利率预期反复，跨境资金流向出现再平衡，A股与港股高估值赛道短线承压，关注政策对冲节奏。"
+  },
+  {
+    id: "hotspot-5",
+    hoursAgo: 100,
+    title: "制造业 PMI 回升至扩张区间，工业金属期货集体走强",
+    tags: ["#PMI", "#周期股"],
+    source: "第一财经 - 5天前",
+    sourceUrl: "https://www.yicai.com/",
+    summary:
+      "景气指标改善提振周期板块风险偏好，铜铝等品种联动上行，后续需结合库存与出口订单验证持续性。"
   }
 ];
 

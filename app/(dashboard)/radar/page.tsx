@@ -1,11 +1,61 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MATRIX_TOPIC_STORAGE_KEY, radarHotspots } from "@/lib/mock-data";
 import { PageHeader } from "@/components/layout/page-header";
 
+type TimeRange = "today" | "3d" | "7d" | "all";
+
+function startOfLocalDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function publishedAtFromHoursAgo(now: Date, hoursAgo: number) {
+  return new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
+}
+
+function matchesTimeRange(published: Date, range: TimeRange, now: Date) {
+  if (range === "all") return true;
+  const sod = startOfLocalDay(now);
+  if (range === "today") {
+    const next = new Date(sod);
+    next.setDate(next.getDate() + 1);
+    return published >= sod && published < next;
+  }
+  if (range === "3d") {
+    const from = new Date(sod);
+    from.setDate(from.getDate() - 2);
+    return published >= from;
+  }
+  if (range === "7d") {
+    const from = new Date(sod);
+    from.setDate(from.getDate() - 6);
+    return published >= from;
+  }
+  return true;
+}
+
 export default function RadarPage() {
   const router = useRouter();
+  const [timeRange, setTimeRange] = useState<TimeRange>("today");
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setNow(new Date());
+  }, []);
+
+  const filteredHotspots = useMemo(() => {
+    if (!now) {
+      return radarHotspots;
+    }
+    return radarHotspots.filter((item) => {
+      const published = publishedAtFromHoursAgo(now, item.hoursAgo);
+      return matchesTimeRange(published, timeRange, now);
+    });
+  }, [now, timeRange]);
 
   const handleAdoptTopic = (topic: (typeof radarHotspots)[number]) => {
     const payload = {
@@ -36,15 +86,36 @@ export default function RadarPage() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-panel p-5">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-lg font-semibold text-textMain">今日财经热点看板</h3>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-textMuted">
-            实时刷新中
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-textMuted">
+              <span className="shrink-0 font-medium text-textMain">时间</span>
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value as TimeRange)}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-textMain outline-none ring-accent/20 focus:ring-4"
+              >
+                <option value="today">今天</option>
+                <option value="3d">近 3 天</option>
+                <option value="7d">近 7 天</option>
+                <option value="all">全部</option>
+              </select>
+            </label>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-textMuted">
+              实时刷新中
+            </span>
+          </div>
         </div>
 
+        {filteredHotspots.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-textMuted">
+            当前时间范围内暂无热点，请切换筛选条件。
+          </p>
+        ) : null}
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {radarHotspots.map((item) => (
+          {filteredHotspots.map((item) => (
             <article key={item.id} className="flex min-h-56 flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-panel">
               <div>
                 <h4 className="text-base font-semibold leading-6 text-textMain">{item.title}</h4>
