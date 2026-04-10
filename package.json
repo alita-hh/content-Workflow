@@ -6,8 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "start:3000": "next start --hostname 127.0.0.1 --port 3000",
+    "start:3000": "node ./scripts/next-start-on-port.mjs 3000",
+    "start:3847": "node ./scripts/next-start-on-port.mjs 3847",
     "build:start": "npm run build && npm run start:3000",
+    "preview": "npm run build && node ./scripts/next-start-on-port.mjs 3847",
+    "preview:only": "node ./scripts/next-start-on-port.mjs 3847",
+    "check:instance": "node ./scripts/check-instance.mjs",
     "lint": "next lint"
   },
   "dependencies": {

@@ -1,27 +1,41 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { MATRIX_TOPIC_STORAGE_KEY, matrixSelectedHotspot, styleGenes } from "@/lib/mock-data";
+import { MATRIX_TOPIC_STORAGE_KEY, matrixSelectedHotspot } from "@/lib/mock-data";
+import {
+  defaultWechatRows,
+  loadWechatRows,
+  WECHAT_STYLE_GENES_CHANGED,
+  type WechatStyleGeneRow
+} from "@/lib/wechat-style-genes";
 import { PageHeader } from "@/components/layout/page-header";
 
 type SelectedTopic = {
   id: string;
   title: string;
   summary: string;
-  source: string;
-  sourceUrl: string;
+  outline?: string;
+  category?: string;
+  sector?: string;
+  date?: string;
 };
 
-const PLATFORM = "公众号" as const;
-
-function getWechatStyleNames() {
-  return styleGenes.filter((item) => item.platform === PLATFORM).map((item) => item.bloggerName);
+function styleNamesFromRows(rows: WechatStyleGeneRow[]) {
+  return rows.map((item) => item.styleName);
 }
 
 export default function MatrixGenPage() {
-  const styleOptions = useMemo(() => getWechatStyleNames(), []);
+  const [wechatRows, setWechatRows] = useState<WechatStyleGeneRow[]>(defaultWechatRows);
+  const styleOptions = useMemo(() => styleNamesFromRows(wechatRows), [wechatRows]);
 
-  const [selectedStyle, setSelectedStyle] = useState(() => getWechatStyleNames()[0] ?? "");
+  useEffect(() => {
+    setWechatRows(loadWechatRows());
+    const onChange = () => setWechatRows(loadWechatRows());
+    window.addEventListener(WECHAT_STYLE_GENES_CHANGED, onChange);
+    return () => window.removeEventListener(WECHAT_STYLE_GENES_CHANGED, onChange);
+  }, []);
+
+  const [selectedStyle, setSelectedStyle] = useState(() => styleNamesFromRows(defaultWechatRows())[0] ?? "");
   const [selectedTopic, setSelectedTopic] = useState<SelectedTopic | null>(null);
 
   const [outline, setOutline] = useState("");
@@ -64,9 +78,7 @@ export default function MatrixGenPage() {
     resetPipeline();
   };
 
-  const selectedGene = styleGenes.find(
-    (item) => item.bloggerName === selectedStyle && item.platform === PLATFORM
-  );
+  const selectedGene = wechatRows.find((item) => item.styleName === selectedStyle);
   const topicTitle = selectedTopic?.title ?? matrixSelectedHotspot;
 
   const generateOutline = () => {
@@ -122,22 +134,21 @@ export default function MatrixGenPage() {
             </label>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
               <p>选题总结：{selectedTopic?.summary ?? "暂未从热点雷达采纳选题，当前展示默认热点。"}</p>
-              <p className="mt-1">
-                信息来源：{selectedTopic?.source ?? "财联社电报 - 10分钟前"}
-                {selectedTopic?.sourceUrl ? (
-                  <>
-                    {" | "}
-                    <a
-                      href={selectedTopic.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-medium text-accent hover:underline"
-                    >
-                      查看原文
-                    </a>
-                  </>
-                ) : null}
-              </p>
+              {selectedTopic?.date ? (
+                <p className="mt-1">日期：{selectedTopic.date}</p>
+              ) : null}
+              {selectedTopic?.category ? (
+                <p className="mt-1">分类：{selectedTopic.category}</p>
+              ) : null}
+              {selectedTopic?.sector ? (
+                <p className="mt-1">板块：{selectedTopic.sector}</p>
+              ) : null}
+              {selectedTopic?.outline ? (
+                <p className="mt-2 whitespace-pre-wrap border-t border-slate-200 pt-2 text-slate-700">
+                  新闻大纲：
+                  {selectedTopic.outline}
+                </p>
+              ) : null}
             </div>
 
             <label className="block">

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { DebugProbe } from "@/components/debug-probe";
 import { Sidebar } from "@/components/layout/sidebar";
 
 function SidebarFallback() {
@@ -24,6 +25,7 @@ export default function DashboardLayout({
 }>) {
   return (
     <div className="min-h-screen bg-bg">
+      <DebugProbe />
       <Suspense fallback={<SidebarFallback />}>
         <Sidebar />
       </Suspense>
