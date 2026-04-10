@@ -259,14 +259,6 @@ export default function MatrixGenPage() {
             <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
               <p className="text-sm font-medium text-textMain">Step 3：标题</p>
               <p className="mt-2 rounded-md bg-slate-50 p-3 text-sm text-slate-700">{title || "内容确认后，点击【生成标题】"}</p>
-              {title ? (
-                <button
-                  type="button"
-                  className="mt-3 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
-                >
-                  下载到飞书
-                </button>
-              ) : null}
             </div>
           </section>
         </div>
