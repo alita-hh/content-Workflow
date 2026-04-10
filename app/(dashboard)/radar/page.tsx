@@ -1,9 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { radarHotspots } from "@/lib/mock-data";
+import { MATRIX_TOPIC_STORAGE_KEY, radarHotspots } from "@/lib/mock-data";
 import { PageHeader } from "@/components/layout/page-header";
-import { MATRIX_TOPIC_STORAGE_KEY } from "@/lib/mock-data";
 
 export default function RadarPage() {
   const router = useRouter();

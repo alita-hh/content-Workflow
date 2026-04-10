@@ -14,13 +14,14 @@ type SelectedTopic = {
 
 const PLATFORM = "公众号" as const;
 
-export default function MatrixGenPage() {
-  const styleOptions = useMemo(
-    () => styleGenes.filter((item) => item.platform === PLATFORM).map((item) => item.bloggerName),
-    []
-  );
+function getWechatStyleNames() {
+  return styleGenes.filter((item) => item.platform === PLATFORM).map((item) => item.bloggerName);
+}
 
-  const [selectedStyle, setSelectedStyle] = useState(styleOptions[0] ?? "");
+export default function MatrixGenPage() {
+  const styleOptions = useMemo(() => getWechatStyleNames(), []);
+
+  const [selectedStyle, setSelectedStyle] = useState(() => getWechatStyleNames()[0] ?? "");
   const [selectedTopic, setSelectedTopic] = useState<SelectedTopic | null>(null);
 
   const [outline, setOutline] = useState("");
@@ -39,6 +40,12 @@ export default function MatrixGenPage() {
       window.localStorage.removeItem(MATRIX_TOPIC_STORAGE_KEY);
     }
   }, []);
+
+  useEffect(() => {
+    if (styleOptions.length > 0 && !styleOptions.includes(selectedStyle)) {
+      setSelectedStyle(styleOptions[0]!);
+    }
+  }, [styleOptions, selectedStyle]);
 
   useEffect(() => {
     setOutline("");
@@ -129,20 +136,26 @@ export default function MatrixGenPage() {
               <select
                 value={selectedStyle}
                 onChange={(event) => setSelectedStyle(event.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-textMain outline-none ring-accent/20 transition focus:ring-4"
+                disabled={styleOptions.length === 0}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-textMain outline-none ring-accent/20 transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
-                {styleOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
+                {styleOptions.length === 0 ? (
+                  <option value="">暂无公众号风格基因</option>
+                ) : (
+                  styleOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))
+                )}
               </select>
             </label>
 
             <button
               type="button"
               onClick={generateOutline}
-              className="mt-2 w-full rounded-lg border border-accent/50 bg-accent px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(47,129,247,0.25)] transition hover:bg-[#1e6fe0]"
+              disabled={styleOptions.length === 0}
+              className="mt-2 w-full rounded-lg border border-accent/50 bg-accent px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(47,129,247,0.25)] transition hover:bg-[#1e6fe0] disabled:cursor-not-allowed disabled:opacity-50"
             >
               生成大纲
             </button>
