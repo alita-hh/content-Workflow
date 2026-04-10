@@ -88,24 +88,19 @@ export default function RadarPage() {
       <div className="rounded-xl border border-slate-200 bg-panel p-5">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-lg font-semibold text-textMain">今日财经热点看板</h3>
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-textMuted">
-              <span className="shrink-0 font-medium text-textMain">时间</span>
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-textMain outline-none ring-accent/20 focus:ring-4"
-              >
-                <option value="today">今天</option>
-                <option value="3d">近 3 天</option>
-                <option value="7d">近 7 天</option>
-                <option value="all">全部</option>
-              </select>
-            </label>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-textMuted">
-              实时刷新中
-            </span>
-          </div>
+          <label className="flex flex-wrap items-center gap-2 text-sm text-textMuted sm:justify-end">
+            <span className="shrink-0 font-medium text-textMain">时间</span>
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value as TimeRange)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-textMain outline-none ring-accent/20 focus:ring-4"
+            >
+              <option value="today">今天</option>
+              <option value="3d">近 3 天</option>
+              <option value="7d">近 7 天</option>
+              <option value="all">全部</option>
+            </select>
+          </label>
         </div>
 
         {filteredHotspots.length === 0 ? (
