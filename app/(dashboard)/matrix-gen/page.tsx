@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MATRIX_TOPIC_STORAGE_KEY, matrixSelectedHotspot, styleGenes } from "@/lib/mock-data";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -12,9 +12,15 @@ type SelectedTopic = {
   sourceUrl: string;
 };
 
+const PLATFORM = "公众号" as const;
+
 export default function MatrixGenPage() {
-  const [platform, setPlatform] = useState<"公众号" | "小红书">("公众号");
-  const [selectedStyle, setSelectedStyle] = useState("");
+  const styleOptions = useMemo(
+    () => styleGenes.filter((item) => item.platform === PLATFORM).map((item) => item.bloggerName),
+    []
+  );
+
+  const [selectedStyle, setSelectedStyle] = useState(styleOptions[0] ?? "");
   const [selectedTopic, setSelectedTopic] = useState<SelectedTopic | null>(null);
 
   const [outline, setOutline] = useState("");
@@ -22,11 +28,6 @@ export default function MatrixGenPage() {
   const [content, setContent] = useState("");
   const [contentEdit, setContentEdit] = useState("");
   const [title, setTitle] = useState("");
-
-  const [xhsImage, setXhsImage] = useState("");
-  const [xhsContent, setXhsContent] = useState("");
-  const [xhsImageEdit, setXhsImageEdit] = useState("");
-  const [xhsContentEdit, setXhsContentEdit] = useState("");
 
   useEffect(() => {
     const rawTopic = window.localStorage.getItem(MATRIX_TOPIC_STORAGE_KEY);
@@ -39,36 +40,24 @@ export default function MatrixGenPage() {
     }
   }, []);
 
-  const styleOptions = styleGenes.filter((item) => item.platform === platform).map((item) => item.bloggerName);
-
   useEffect(() => {
-    setSelectedStyle(styleOptions[0] ?? "");
     setOutline("");
     setOutlineEdit("");
     setContent("");
     setContentEdit("");
     setTitle("");
-    setXhsImage("");
-    setXhsContent("");
-    setXhsImageEdit("");
-    setXhsContentEdit("");
-  }, [platform]);
+  }, [selectedStyle]);
 
-  const selectedGene = styleGenes.find((item) => item.bloggerName === selectedStyle && item.platform === platform);
+  const selectedGene = styleGenes.find(
+    (item) => item.bloggerName === selectedStyle && item.platform === PLATFORM
+  );
   const topicTitle = selectedTopic?.title ?? matrixSelectedHotspot;
 
   const generateOutline = () => {
-    if (platform === "公众号") {
-      const base =
-        selectedGene?.wechatOutlinePrompt ??
-        "框架：1) 热点背景；2) 市场影响；3) 配置建议；4) 风险提示。";
-      setOutline(`${base}\n\n围绕选题《${topicTitle}》展开，先结论后证据。`);
-      return;
-    }
-    const imageBase = selectedGene?.xhsImagePrompt ?? "封面图：金融图表背景 + 高对比标题 + 专业感蓝白色系。";
-    const contentBase = selectedGene?.xhsContentPrompt ?? "正文：emoji + 分点结构，先结论再拆逻辑。";
-    setXhsImage(`${imageBase}\n主题关键词：${topicTitle}`);
-    setXhsContent(`${contentBase}\n核心卖点：把复杂热点说清楚，并给出可执行观察清单。`);
+    const base =
+      selectedGene?.wechatOutlinePrompt ??
+      "框架：1) 热点背景；2) 市场影响；3) 配置建议；4) 风险提示。";
+    setOutline(`${base}\n\n围绕选题《${topicTitle}》展开，先结论后证据。`);
   };
 
   const regenerateOutline = () => {
@@ -94,24 +83,12 @@ export default function MatrixGenPage() {
     setTitle(`《${topicTitle}：从热点到策略，哪些方向最值得跟踪？》`);
   };
 
-  const regenerateXhsImage = () => {
-    const suffix = xhsImageEdit.trim() ? `（按修改词：${xhsImageEdit.trim()}）` : "（微调视觉风格）";
-    const base = selectedGene?.xhsImagePrompt ?? xhsImage;
-    setXhsImage(`${base}\n${suffix}`);
-  };
-
-  const regenerateXhsContent = () => {
-    const suffix = xhsContentEdit.trim() ? `（按修改词：${xhsContentEdit.trim()}）` : "（优化节奏）";
-    const base = selectedGene?.xhsContentPrompt ?? xhsContent;
-    setXhsContent(`${base}\n${suffix}`);
-  };
-
   return (
     <section className="space-y-6">
       <PageHeader
         eyebrow="Matrix Production"
         title="财经矩阵化出稿车间"
-        description="按平台分步生成：公众号三步，小红书两步。"
+        description="公众号分步生成：大纲 → 内容 → 标题。"
       />
 
       <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
@@ -148,19 +125,7 @@ export default function MatrixGenPage() {
             </div>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-textMain">平台选择</span>
-              <select
-                value={platform}
-                onChange={(event) => setPlatform(event.target.value as "公众号" | "小红书")}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-textMain outline-none ring-accent/20 transition focus:ring-4"
-              >
-                <option value="公众号">公众号</option>
-                <option value="小红书">小红书</option>
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-textMain">大 V 风格选择</span>
+              <span className="mb-2 block text-sm font-medium text-textMain">大 V 风格选择（公众号）</span>
               <select
                 value={selectedStyle}
                 onChange={(event) => setSelectedStyle(event.target.value)}
@@ -183,148 +148,94 @@ export default function MatrixGenPage() {
             </button>
 
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-textMuted">
-              当前平台：{platform} | 当前风格基因：{selectedStyle || "暂无"}
+              平台：公众号 | 当前风格基因：{selectedStyle || "暂无"}
             </div>
           </div>
         </aside>
 
         <div className="space-y-5">
-          {platform === "公众号" ? (
-            <section className="rounded-xl border border-slate-200 bg-panel p-5 shadow-panel">
-              <h3 className="text-base font-semibold text-textMain">公众号版本（分步生成）</h3>
+          <section className="rounded-xl border border-slate-200 bg-panel p-5 shadow-panel">
+            <h3 className="text-base font-semibold text-textMain">公众号（分步生成）</h3>
 
-              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-                <p className="text-sm font-medium text-textMain">Step 1：大纲</p>
-                <pre className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs leading-6 text-slate-700">
-                  {outline || "请先点击【生成大纲】"}
-                </pre>
-                {outline ? (
-                  <div className="mt-3 space-y-2">
-                    <input
-                      value={outlineEdit}
-                      onChange={(event) => setOutlineEdit(event.target.value)}
-                      placeholder="输入修改词，如：更偏交易策略"
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-accent/20 focus:ring-4"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={regenerateOutline}
-                        className="rounded-md border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200"
-                      >
-                        修改大纲
-                      </button>
-                      <button
-                        type="button"
-                        onClick={generateContent}
-                        className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/15"
-                      >
-                        生成内容
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-                <p className="text-sm font-medium text-textMain">Step 2：内容</p>
-                <pre className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs leading-6 text-slate-700">
-                  {content || "大纲确认后，点击【生成内容】"}
-                </pre>
-                {content ? (
-                  <div className="mt-3 space-y-2">
-                    <input
-                      value={contentEdit}
-                      onChange={(event) => setContentEdit(event.target.value)}
-                      placeholder="输入修改词，如：更偏机构研报语气"
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-accent/20 focus:ring-4"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={regenerateContent}
-                        className="rounded-md border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200"
-                      >
-                        修改内容
-                      </button>
-                      <button
-                        type="button"
-                        onClick={generateTitle}
-                        className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/15"
-                      >
-                        生成标题
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-                <p className="text-sm font-medium text-textMain">Step 3：标题</p>
-                <p className="mt-2 rounded-md bg-slate-50 p-3 text-sm text-slate-700">{title || "内容确认后，点击【生成标题】"}</p>
-                {title ? (
-                  <button
-                    type="button"
-                    className="mt-3 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
-                  >
-                    下载到飞书
-                  </button>
-                ) : null}
-              </div>
-            </section>
-          ) : (
-            <section className="rounded-xl border border-slate-200 bg-panel p-5 shadow-panel">
-              <h3 className="text-base font-semibold text-textMain">小红书版本（图片+内容双生成）</h3>
-
-              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-                <p className="text-sm font-medium text-textMain">图片风格</p>
-                <pre className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs leading-6 text-slate-700">
-                  {xhsImage || "请先点击【生成大纲】，将同步生成图片与内容草稿"}
-                </pre>
-                {xhsImage ? (
-                  <div className="mt-3 space-y-2">
-                    <input
-                      value={xhsImageEdit}
-                      onChange={(event) => setXhsImageEdit(event.target.value)}
-                      placeholder="输入图片修改词，如：更科技蓝、更强数据感"
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-accent/20 focus:ring-4"
-                    />
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+              <p className="text-sm font-medium text-textMain">Step 1：大纲</p>
+              <pre className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs leading-6 text-slate-700">
+                {outline || "请先点击【生成大纲】"}
+              </pre>
+              {outline ? (
+                <div className="mt-3 space-y-2">
+                  <input
+                    value={outlineEdit}
+                    onChange={(event) => setOutlineEdit(event.target.value)}
+                    placeholder="输入修改词，如：更偏交易策略"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-accent/20 focus:ring-4"
+                  />
+                  <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={regenerateXhsImage}
+                      onClick={regenerateOutline}
                       className="rounded-md border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200"
                     >
-                      重新生成图片
+                      修改大纲
                     </button>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-                <p className="text-sm font-medium text-textMain">内容文案</p>
-                <pre className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs leading-6 text-slate-700">
-                  {xhsContent || "请先点击【生成大纲】，将同步生成图片与内容草稿"}
-                </pre>
-                {xhsContent ? (
-                  <div className="mt-3 space-y-2">
-                    <input
-                      value={xhsContentEdit}
-                      onChange={(event) => setXhsContentEdit(event.target.value)}
-                      placeholder="输入文案修改词，如：增加行动建议、加emoji"
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-accent/20 focus:ring-4"
-                    />
                     <button
                       type="button"
-                      onClick={regenerateXhsContent}
-                      className="rounded-md border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200"
+                      onClick={generateContent}
+                      className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/15"
                     >
-                      重新生成内容
+                      生成内容
                     </button>
                   </div>
-                ) : null}
-              </div>
-            </section>
-          )}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+              <p className="text-sm font-medium text-textMain">Step 2：内容</p>
+              <pre className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs leading-6 text-slate-700">
+                {content || "大纲确认后，点击【生成内容】"}
+              </pre>
+              {content ? (
+                <div className="mt-3 space-y-2">
+                  <input
+                    value={contentEdit}
+                    onChange={(event) => setContentEdit(event.target.value)}
+                    placeholder="输入修改词，如：更偏机构研报语气"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-accent/20 focus:ring-4"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={regenerateContent}
+                      className="rounded-md border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200"
+                    >
+                      修改内容
+                    </button>
+                    <button
+                      type="button"
+                      onClick={generateTitle}
+                      className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/15"
+                    >
+                      生成标题
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+              <p className="text-sm font-medium text-textMain">Step 3：标题</p>
+              <p className="mt-2 rounded-md bg-slate-50 p-3 text-sm text-slate-700">{title || "内容确认后，点击【生成标题】"}</p>
+              {title ? (
+                <button
+                  type="button"
+                  className="mt-3 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                >
+                  下载到飞书
+                </button>
+              ) : null}
+            </div>
+          </section>
         </div>
       </div>
     </section>
