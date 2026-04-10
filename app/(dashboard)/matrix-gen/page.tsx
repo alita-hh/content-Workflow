@@ -42,18 +42,27 @@ export default function MatrixGenPage() {
   }, []);
 
   useEffect(() => {
-    if (styleOptions.length > 0 && !styleOptions.includes(selectedStyle)) {
+    if (styleOptions.length === 0) {
+      if (selectedStyle !== "") setSelectedStyle("");
+      return;
+    }
+    if (!styleOptions.includes(selectedStyle)) {
       setSelectedStyle(styleOptions[0]!);
     }
   }, [styleOptions, selectedStyle]);
 
-  useEffect(() => {
+  const resetPipeline = () => {
     setOutline("");
     setOutlineEdit("");
     setContent("");
     setContentEdit("");
     setTitle("");
-  }, [selectedStyle]);
+  };
+
+  const handleStyleChange = (value: string) => {
+    setSelectedStyle(value);
+    resetPipeline();
+  };
 
   const selectedGene = styleGenes.find(
     (item) => item.bloggerName === selectedStyle && item.platform === PLATFORM
@@ -135,7 +144,7 @@ export default function MatrixGenPage() {
               <span className="mb-2 block text-sm font-medium text-textMain">大 V 风格选择（公众号）</span>
               <select
                 value={selectedStyle}
-                onChange={(event) => setSelectedStyle(event.target.value)}
+                onChange={(event) => handleStyleChange(event.target.value)}
                 disabled={styleOptions.length === 0}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-textMain outline-none ring-accent/20 transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
