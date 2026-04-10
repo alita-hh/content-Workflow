@@ -52,7 +52,8 @@ export default function RadarPage() {
       return radarHotspots;
     }
     return radarHotspots.filter((item) => {
-      const published = publishedAtFromHoursAgo(now, item.hoursAgo);
+      const hours = typeof item.hoursAgo === "number" && !Number.isNaN(item.hoursAgo) ? item.hoursAgo : 0;
+      const published = publishedAtFromHoursAgo(now, hours);
       return matchesTimeRange(published, timeRange, now);
     });
   }, [now, timeRange]);
