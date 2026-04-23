@@ -1,21 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { NAV_ITEMS } from "@/lib/constants";
+import { usePathname, useRouter } from "next/navigation";
+import type { UserRole } from "@/lib/auth";
+import { navItemsByRole } from "@/lib/constants";
 
-export function Sidebar() {
+export function Sidebar({ role }: { role: UserRole }) {
   const pathname = usePathname() ?? "";
+  const router = useRouter();
+  const navItems = navItemsByRole(role);
+
+  const onLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    router.replace("/login");
+    router.refresh();
+  };
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-72 border-r border-slate-200 bg-panel px-4 py-6 shadow-panel">
       <div className="mb-8 px-2">
         <p className="text-xs uppercase tracking-[0.2em] text-accentGlow">FinTech Ops</p>
         <h1 className="mt-2 text-lg font-semibold text-textMain">财经内容工作流</h1>
+        <p className="mt-2 text-xs text-textMuted">{role === "product" ? "产品研发账号" : "运营账号"}</p>
       </div>
 
       <nav className="space-y-2">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active = pathname === item.href;
           return (
             <Link
@@ -32,6 +42,13 @@ export function Sidebar() {
           );
         })}
       </nav>
+      <button
+        type="button"
+        onClick={onLogout}
+        className="mt-6 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-textMain hover:bg-slate-50"
+      >
+        退出登录
+      </button>
     </aside>
   );
 }

@@ -1,6 +1,9 @@
 import { Suspense } from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { DebugProbe } from "@/components/debug-probe";
 import { Sidebar } from "@/components/layout/sidebar";
+import { AUTH_COOKIE_NAME, normalizeRole } from "@/lib/auth";
 
 function SidebarFallback() {
   return (
@@ -23,11 +26,14 @@ export default function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const role = normalizeRole(cookies().get(AUTH_COOKIE_NAME)?.value);
+  if (!role) redirect("/login");
+
   return (
     <div className="min-h-screen bg-bg">
       <DebugProbe />
       <Suspense fallback={<SidebarFallback />}>
-        <Sidebar />
+        <Sidebar role={role} />
       </Suspense>
       <main className="ml-72 min-h-screen p-8">
         <div className="rounded-2xl border border-slate-200 bg-panel p-6 shadow-panel">{children}</div>

@@ -13,7 +13,7 @@ type AgentPayload = {
 /** 双写：ingest + 同源 API 落盘（DEBUG） */
 export function sendAgentDebugLog(payload: AgentPayload) {
   const body = JSON.stringify({
-    sessionId: "710836",
+    sessionId: "14dba4",
     ...payload,
     timestamp: Date.now()
   });
@@ -21,7 +21,7 @@ export function sendAgentDebugLog(payload: AgentPayload) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Debug-Session-Id": "710836"
+      "X-Debug-Session-Id": "14dba4"
     },
     body
   }).catch(() => {});

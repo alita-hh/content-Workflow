@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { sendAgentDebugLog } from "@/lib/debug-client-log";
 import { MATRIX_TOPIC_STORAGE_KEY, matrixSelectedHotspot } from "@/lib/mock-data";
 import {
   defaultWechatRows,
+  defaultXhsRows,
   loadWechatRows,
+  loadXhsRows,
   WECHAT_STYLE_GENES_CHANGED,
-  type WechatStyleGeneRow
+  type WechatStyleGeneRow,
+  type XhsStyleGeneRow
 } from "@/lib/wechat-style-genes";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -24,18 +28,29 @@ function styleNamesFromRows(rows: WechatStyleGeneRow[]) {
   return rows.map((item) => item.styleName);
 }
 
+function xhsStyleNamesFromRows(rows: XhsStyleGeneRow[]) {
+  return rows.map((item) => item.styleName);
+}
+
 export default function MatrixGenPage() {
   const [wechatRows, setWechatRows] = useState<WechatStyleGeneRow[]>(defaultWechatRows);
-  const styleOptions = useMemo(() => styleNamesFromRows(wechatRows), [wechatRows]);
+  const [xhsRows, setXhsRows] = useState<XhsStyleGeneRow[]>(defaultXhsRows);
+  const [selectedPlatform, setSelectedPlatform] = useState<"xhs" | "wechat">("xhs");
+  const styleOptions = useMemo(() => {
+    return selectedPlatform === "wechat"
+      ? styleNamesFromRows(wechatRows)
+      : xhsStyleNamesFromRows(xhsRows);
+  }, [selectedPlatform, wechatRows, xhsRows]);
 
   useEffect(() => {
     setWechatRows(loadWechatRows());
+    setXhsRows(loadXhsRows());
     const onChange = () => setWechatRows(loadWechatRows());
     window.addEventListener(WECHAT_STYLE_GENES_CHANGED, onChange);
     return () => window.removeEventListener(WECHAT_STYLE_GENES_CHANGED, onChange);
   }, []);
 
-  const [selectedStyle, setSelectedStyle] = useState(() => styleNamesFromRows(defaultWechatRows())[0] ?? "");
+  const [selectedStyle, setSelectedStyle] = useState(() => xhsStyleNamesFromRows(defaultXhsRows())[0] ?? "");
   const [selectedTopic, setSelectedTopic] = useState<SelectedTopic | null>(null);
 
   const [outline, setOutline] = useState("");
@@ -64,6 +79,35 @@ export default function MatrixGenPage() {
       setSelectedStyle(styleOptions[0]!);
     }
   }, [styleOptions, selectedStyle]);
+
+  useEffect(() => {
+    // #region agent log
+    sendAgentDebugLog({
+      hypothesisId: "H_PLATFORM_FILTER_RENDER",
+      location: "matrix-gen/page.tsx:selectedPlatform",
+      message: "matrix_platform_filter_changed",
+      data: { selectedPlatform },
+      runId: "matrix-platform-filter-1"
+    });
+    // #endregion
+  }, [selectedPlatform]);
+
+  useEffect(() => {
+    // #region agent log
+    sendAgentDebugLog({
+      hypothesisId: "H_STYLE_OPTIONS_SOURCE",
+      location: "matrix-gen/page.tsx:styleOptions",
+      message: "matrix_style_options_snapshot",
+      data: {
+        selectedPlatform,
+        styleOptionCount: styleOptions.length,
+        previewOptions: styleOptions.slice(0, 5),
+        selectedStyle
+      },
+      runId: "matrix-platform-filter-1"
+    });
+    // #endregion
+  }, [selectedPlatform, styleOptions, selectedStyle]);
 
   const resetPipeline = () => {
     setOutline("");
@@ -116,7 +160,7 @@ export default function MatrixGenPage() {
       <PageHeader
         eyebrow="Matrix Production"
         title="财经矩阵化出稿车间"
-        description="公众号分步生成：大纲 → 内容 → 标题。"
+        description="按平台生成初稿，支持公众号和小红书。"
       />
 
       <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
@@ -152,7 +196,24 @@ export default function MatrixGenPage() {
             </div>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-textMain">大 V 风格选择（公众号）</span>
+              <span className="mb-2 block text-sm font-medium text-textMain">生成平台</span>
+              <select
+                value={selectedPlatform}
+                onChange={(event) => {
+                  setSelectedPlatform(event.target.value as "xhs" | "wechat");
+                  resetPipeline();
+                }}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-textMain outline-none ring-accent/20 transition focus:ring-4"
+              >
+                <option value="xhs">小红书</option>
+                <option value="wechat">公众号</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-textMain">
+                大 V 风格选择（{selectedPlatform === "wechat" ? "公众号" : "小红书"}）
+              </span>
               <select
                 value={selectedStyle}
                 onChange={(event) => handleStyleChange(event.target.value)}
@@ -160,7 +221,7 @@ export default function MatrixGenPage() {
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-textMain outline-none ring-accent/20 transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 {styleOptions.length === 0 ? (
-                  <option value="">暂无公众号风格基因</option>
+                  <option value="">暂无{selectedPlatform === "wechat" ? "公众号" : "小红书"}风格基因</option>
                 ) : (
                   styleOptions.map((option) => (
                     <option key={option} value={option}>
@@ -173,60 +234,67 @@ export default function MatrixGenPage() {
 
             <button
               type="button"
-              onClick={generateOutline}
+              onClick={selectedPlatform === "wechat" ? generateOutline : generateContent}
               disabled={styleOptions.length === 0}
               className="mt-2 w-full rounded-lg border border-accent/50 bg-accent px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(47,129,247,0.25)] transition hover:bg-[#1e6fe0] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              生成大纲
+              {selectedPlatform === "wechat" ? "生成大纲" : "生成内容"}
             </button>
 
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-textMuted">
-              平台：公众号 | 当前风格基因：{selectedStyle || "暂无"}
+              平台：{selectedPlatform === "wechat" ? "公众号" : "小红书"} | 当前风格基因：{selectedStyle || "暂无"}
             </div>
           </div>
         </aside>
 
         <div className="space-y-5">
           <section className="rounded-xl border border-slate-200 bg-panel p-5 shadow-panel">
-            <h3 className="text-base font-semibold text-textMain">公众号（分步生成）</h3>
+            <h3 className="text-base font-semibold text-textMain">
+              {selectedPlatform === "wechat" ? "公众号（分步生成）" : "小红书（内容+标题）"}
+            </h3>
 
-            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-              <p className="text-sm font-medium text-textMain">Step 1：大纲</p>
-              <pre className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs leading-6 text-slate-700">
-                {outline || "请先点击【生成大纲】"}
-              </pre>
-              {outline ? (
-                <div className="mt-3 space-y-2">
-                  <input
-                    value={outlineEdit}
-                    onChange={(event) => setOutlineEdit(event.target.value)}
-                    placeholder="输入修改词，如：更偏交易策略"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-accent/20 focus:ring-4"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={regenerateOutline}
-                      className="rounded-md border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200"
-                    >
-                      修改大纲
-                    </button>
-                    <button
-                      type="button"
-                      onClick={generateContent}
-                      className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/15"
-                    >
-                      生成内容
-                    </button>
+            {selectedPlatform === "wechat" ? (
+              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+                <p className="text-sm font-medium text-textMain">Step 1：大纲</p>
+                <pre className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs leading-6 text-slate-700">
+                  {outline || "请先点击【生成大纲】"}
+                </pre>
+                {outline ? (
+                  <div className="mt-3 space-y-2">
+                    <input
+                      value={outlineEdit}
+                      onChange={(event) => setOutlineEdit(event.target.value)}
+                      placeholder="输入修改词，如：更偏交易策略"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-accent/20 focus:ring-4"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={regenerateOutline}
+                        className="rounded-md border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200"
+                      >
+                        修改大纲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={generateContent}
+                        className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/15"
+                      >
+                        生成内容
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : null}
-            </div>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-              <p className="text-sm font-medium text-textMain">Step 2：内容</p>
+              <p className="text-sm font-medium text-textMain">
+                {selectedPlatform === "xhs" ? "内容产出" : "Step 2：内容"}
+              </p>
               <pre className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs leading-6 text-slate-700">
-                {content || "大纲确认后，点击【生成内容】"}
+                {content ||
+                  (selectedPlatform === "xhs" ? "请先点击左侧【生成内容】" : "大纲确认后，点击【生成内容】")}
               </pre>
               {content ? (
                 <div className="mt-3 space-y-2">
@@ -257,7 +325,9 @@ export default function MatrixGenPage() {
             </div>
 
             <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-              <p className="text-sm font-medium text-textMain">Step 3：标题</p>
+              <p className="text-sm font-medium text-textMain">
+                {selectedPlatform === "xhs" ? "标题产出" : "Step 3：标题"}
+              </p>
               <p className="mt-2 rounded-md bg-slate-50 p-3 text-sm text-slate-700">{title || "内容确认后，点击【生成标题】"}</p>
             </div>
           </section>
